@@ -14,19 +14,12 @@ return new class extends Migration
         Schema::create('servers', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
-            $table->ipAddress('ipv4')->nullable();
-            $table->string('port')->nullable();
-            $table->ipAddress('ipv6')->nullable();
+            $table->ipAddress('ip')->nullable();
             $table->string('location')->nullable();
             $table->string('country')->nullable();
             $table->json('config')->nullable();
-            //SSH
-            $table->string('ssh_host')->nullable();
-            $table->string('ssh_port')->nullable();
-            $table->string('ssh_user')->nullable();
-            $table->string('ssh_password')->nullable();
-            $table->string('ssh_key')->nullable();
 
+            $table->string('domain')->nullable();
             $table->enum('status',['UP','DOWN'])->default('DOWN');
             $table->string('token')->nullable();
 
@@ -41,6 +34,7 @@ return new class extends Migration
             $table->string('type');
             $table->json('config')->nullable();
             $table->integer('port')->nullable();
+//            $table->string('flow')->nullable();
             $table->foreignId('server_id')->constrained('servers');
             $table->ipAddress('in')->nullable();
             $table->timestamps();

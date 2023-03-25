@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class CreateUser extends Command
 {
@@ -35,14 +36,18 @@ class CreateUser extends Command
         //Get the password of the user
         $password = $this->ask('What is your password?');
         //Create the user
+
+        $token = Str::random(32);
         $user = User::create([
             'name' => $name,
             'email' => $email,
             'password' => Hash::make($password),
+            'token' => $token,
         ]);
         $this->info('User created successfully');
         $this->info('User ID: '.$user->id);
         $this->info('User Name: '.$user->name);
         $this->info('User Email: '.$user->email);
+        $this->info('User Token: '.$user->token);
     }
 }
