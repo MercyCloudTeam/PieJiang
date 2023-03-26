@@ -2,13 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Server;
 use App\Models\User;
 use Closure;
 use Exception;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class VerifyUserToken
+class VerifyServerToken
 {
     /**
      * Handle an incoming request.
@@ -25,10 +26,10 @@ class VerifyUserToken
                     'message' => 'Failed to verify token',
                 ], 401);
             }
-            User::where('token', $token)->firstOrFail();
+            Server::where('token', $token)->firstOrFail();
         } catch (Exception $e) {
             return response()->json([
-                'message' => 'Invalid User Token',
+                'message' => 'Invalid Server Token',
             ], 401);
         }
         return $next($request);

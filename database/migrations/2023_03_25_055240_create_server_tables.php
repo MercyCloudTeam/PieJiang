@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -20,7 +19,7 @@ return new class extends Migration
             $table->json('config')->nullable();
 
             $table->string('domain')->nullable();
-            $table->enum('status',['UP','DOWN'])->default('DOWN');
+            $table->enum('status', ['UP', 'DOWN'])->default('DOWN');
             $table->string('token')->nullable();
 
             $table->boolean('agent')->default(false);
@@ -32,22 +31,22 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('type');
+            $table->string('domain')->nullable();
             $table->json('config')->nullable();
             $table->integer('port')->nullable();
 //            $table->string('flow')->nullable();
             $table->foreignId('server_id')->constrained('servers');
-            $table->ipAddress('in')->nullable();
             $table->timestamps();
         });
 
-        Schema::create('proxy_group',function (Blueprint $table){
+        Schema::create('proxy_group', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('type');
             $table->timestamps();
         });
 
-        Schema::create('rules',function (Blueprint $table){
+        Schema::create('rules', function (Blueprint $table) {
             $table->id();
             $table->string('content')->nullable();
             $table->string('type');

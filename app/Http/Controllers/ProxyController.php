@@ -239,25 +239,24 @@ class ProxyController extends Controller
         $result = [];
         $proxies = Proxy::all();
         foreach ($proxies as $proxy) {
-            $result[] = [
-                'name' => $proxy->name,
-            ];
             switch ($proxy->type) {
                 case 'trojan':
                     $result[] = [
+                        'name' => $proxy->display_name,
                         'type' => 'trojan',
-                        'server' => $proxy->in ?? $proxy->config['server'],
+                        'server' => $proxy->server->ip,
                         'port' => $proxy->port,
                         'password' => $proxy->config['password'],
-                        'sni' => $proxy->config['sni'],
-                        'skip-cert-verify' => $proxy->config['skip-cert-verify'],
-                        'udp' => $proxy->config['udp'],
+                        'sni' => $proxy->config['sni'] ?? $proxy->server->domain,
+                        'skip-cert-verify' => $proxy->config['skip-cert-verify'] ?? false,
+                        'udp' => $proxy->config['udp'] ?? false,
                     ];
                     break;
                 case 'http':
                     $result[] = [
+                        'name' => $proxy->display_name,
                         'type' => 'http',
-                        'server' => $proxy->config['server'],
+                        'server' => $proxy->server->ip,
                         'port' => $proxy->port,
                         'username' => $proxy->config['username'],
                         'password' => $proxy->config['password'],
@@ -266,8 +265,9 @@ class ProxyController extends Controller
                     break;
                 case 'sock5':
                     $result[] = [
+                        'name' => $proxy->display_name,
                         'type' => 'socks5',
-                        'server' => $proxy->config['server'],
+                        'server' => $proxy->server->ip,
                         'port' => $proxy->port,
                         'username' => $proxy->config['username'],
                         'password' => $proxy->config['password'],
@@ -275,19 +275,24 @@ class ProxyController extends Controller
                     ];
                     break;
                 case 'ss':
+                    if ($proxy->config['method'] == '2022-blake3-aes-128-gcm'){
+                        continue;
+                    }
                     $result[] = [
+                        'name' => $proxy->display_name,
                         'type' => 'ss',
-                        'server' => $proxy->config['server'],
+                        'server' => $proxy->server->ip,
                         'port' => $proxy->port,
-                        'cipher' => $proxy->config['cipher'],
+                        'cipher' => $proxy->config['method'],
                         'password' => $proxy->config['password'],
-                        'udp' => $proxy->config['udp'],
+                        'udp' => $proxy->config['udp'] ?? false,
                     ];
                     break;
                 case 'vmess':
                     $temp = [
+                        'name' => $proxy->display_name,
                         'type' => 'vmess',
-                        'server' => $proxy->config['server'],
+                        'server' => $proxy->server->ip,
                         'port' => $proxy->port,
                         'uuid' => $proxy->config['uuid'],
                         'alterId' => $proxy->config['alterId'],
@@ -308,12 +313,20 @@ class ProxyController extends Controller
         return $result;
     }
 
+
     public function clashConfig(Request $request)
     {
         $general = Yaml::parseFile(storage_path('app/GeneralClashConfig.yml'));
         //generate rules
         $groups = ProxyGroup::all()->load('rules');
-        $proxiesNameList = Proxy::all()->pluck('name')->toArray();
+//        $proxiesNameList = Proxy::all()->pluck('display_name')->toArray();
+        $proxies = $this->getProxies();
+
+//        dd($proxies);
+        foreach ($proxies as $proxy) {
+            $proxiesNameList[] = $proxy['name'];
+        }
+        $general['proxies'] = $proxies;
 
         $proxiesNameList = array_merge($proxiesNameList, ['DIRECT', 'REJECT']);
         $rules = [];
@@ -358,7 +371,12 @@ class ProxyController extends Controller
 
         //out yaml
         $yaml = Yaml::dump($general, 10, 2);
-        return response($yaml)->header('Content-Type', 'text/plain')->header('Content-Disposition', 'attachment; filename="PieJiang Proxy"');
+        if ($request->download) {
+            return response($yaml)->header('Content-Type', 'text/plain')
+                ->header('Content-Disposition', 'attachment; filename="' . env('APP_NAME') . ' Proxy"');
+        } else {
+            return response($yaml)->header('Content-Type', 'text/plain');
+        }
     }
 
     public function processACL4SSR($acl)

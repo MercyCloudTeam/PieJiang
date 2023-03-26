@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ProxyController;
+use App\Http\Controllers\ServerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,16 +21,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::prefix('/proxy')->middleware(['verify.user.token'])->group(function () {
-    Route::get('/clash', [\App\Http\Controllers\ProxyController::class, 'clashConfig']);
+    Route::get('/clash', [ProxyController::class, 'clashConfig']);
 });
 
 Route::prefix('/user')->middleware(['verify.user.token'])->group(function () {
-    Route::get('/register/server',[\App\Http\Controllers\ServerController::class,'registerUrl']);
+    Route::get('/register/server',[ServerController::class,'registerUrl']);
 });
 
-
-Route::prefix('/server')->group(function () {
-    Route::get('/{server}/xray', [\App\Http\Controllers\ProxyController::class, 'generateXrayServerConfig'])->name('api.server.xray.config');
-    Route::get('/register',[\App\Http\Controllers\ServerController::class,'register'])->name('api.server.register');
+Route::prefix('/server')->middleware(['verify.server.token'])->group(function () {
+    Route::get('/{server}/xray-server', [ProxyController::class, 'generateXrayServerConfig'])->name('api.server.xray.config');
+    Route::get('/{server}/xray-access', [ProxyController::class, 'generateXraAccessConfig'])->name('api.server.xray.config.access');
+    Route::get('/register',[ServerController::class,'register'])->name('api.server.register');
 
 });
