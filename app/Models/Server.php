@@ -29,4 +29,9 @@ class Server extends Model
     {
         return $this->hasMany(Proxy::class,'server_id','id');
     }
+
+    public function access()
+    {
+        return $this->hasMany(Access::class,'server_id','id');
+    }
 }

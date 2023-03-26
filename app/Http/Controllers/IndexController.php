@@ -31,6 +31,8 @@ class IndexController extends Controller
 
     public function dashboard()
     {
-        return Inertia::render('Dashboard');
+        return Inertia::render('Dashboard',[
+            'user' => auth()->user(),
+        ]);
     }
 }

@@ -21,16 +21,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::prefix('/proxy')->middleware(['verify.user.token'])->group(function () {
-    Route::get('/clash', [ProxyController::class, 'clashConfig']);
+    Route::get('/clash', [ProxyController::class, 'clashConfig'])->name('api.proxy.clash.config');
 });
 
 Route::prefix('/user')->middleware(['verify.user.token'])->group(function () {
-    Route::get('/register/server',[ServerController::class,'registerUrl']);
+    Route::get('/register/server',[ServerController::class,'registerUrl'])->name('api.user.server.register.url');
 });
 
 Route::prefix('/server')->middleware(['verify.server.token'])->group(function () {
     Route::get('/{server}/xray-server', [ProxyController::class, 'generateXrayServerConfig'])->name('api.server.xray.config');
-    Route::get('/{server}/xray-access', [ProxyController::class, 'generateXraAccessConfig'])->name('api.server.xray.config.access');
-    Route::get('/register',[ServerController::class,'register'])->name('api.server.register');
-
+    Route::get('/{server}/xray-access', [ProxyController::class, 'generateXrayAccessConfig'])->name('api.server.xray.config.access');
 });
+Route::get('/server/register',[ServerController::class,'register'])->name('api.server.register');

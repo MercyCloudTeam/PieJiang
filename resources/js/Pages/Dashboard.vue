@@ -1,6 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
+
+defineProps({
+    user: Array,
+});
 </script>
 
 <template>
@@ -15,6 +19,11 @@ import { Head } from '@inertiajs/vue3';
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">You're logged in!</div>
+                    <div class="p-6 text-gray-900">
+                        User Token: {{user.token}} <br>
+                        Clash URL: {{route('api.proxy.clash.config')}}{{"?token="+ user.token + "&download=1"}} <br>
+                        CA Crt: <a :href="route('ca')">Download</a>
+                    </div>
                 </div>
             </div>
         </div>

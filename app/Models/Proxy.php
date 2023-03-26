@@ -13,7 +13,7 @@ class Proxy extends Model
     protected $table = 'proxies';
 
     protected $fillable = [
-       'name','type','config','port','server_id','in'
+       'name','type','config','port','server_id','domain'
     ];
 
     protected $casts = [

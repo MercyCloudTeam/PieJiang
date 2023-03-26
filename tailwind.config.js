@@ -16,6 +16,18 @@ module.exports = {
             },
         },
     },
-
-    plugins: [require('@tailwindcss/forms')],
+    daisyui: {
+        styled: true,
+        themes: true,
+        base: true,
+        utils: true,
+        logs: true,
+        rtl: false,
+        prefix: "",
+        darkTheme: "light",
+    },
+    plugins: [
+        require('@tailwindcss/forms'),
+        require("daisyui"),
+    ],
 };

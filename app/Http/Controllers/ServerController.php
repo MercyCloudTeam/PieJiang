@@ -6,9 +6,23 @@ use App\Models\Server;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class ServerController extends Controller
 {
+
+    public function index()
+    {
+        return Inertia::render('Server/Index', [
+            'servers' => Server::all(),
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response|mixed
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     */
     public function register(Request $request)
     {
         if (!$request->hasValidSignature()) {
