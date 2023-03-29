@@ -66,7 +66,7 @@ const form = useForm({
                 <InputLabel for="server_id" value="Server" />
 
                 <select v-model="form.server_id" class="mt-1 block w-full">
-                    <option v-for="server in props.servers" :value="server.id">{{server.name}}</option>
+                    <option v-for="server in props.servers" :value="server.id">[{{server.country}}]{{server.name}} - {{server.ip}}</option>
                 </select>
 
                 <InputError class="mt-2" :message="form.errors.server_id" />

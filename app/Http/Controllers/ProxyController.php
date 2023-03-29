@@ -324,7 +324,7 @@ class ProxyController extends Controller
                         'clients' => [
                             [
                                 'id' => $proxy->config['uuid'],
-                                'encryption' => 'none',
+                                // 'encryption' => 'none',
                                 'flow' => $proxy->config['flow'] ?? '',
                             ]
                         ],
@@ -333,7 +333,7 @@ class ProxyController extends Controller
                 ];
 
                 if (isset($proxy->config['security']) && $proxy->config['security'] == 'reality') {
-                    $result = array($result, [
+                    $result = array_merge($result, [
                         'streamSettings' => [
                             'network' => 'grpc',
                             'security' => 'reality',
@@ -427,7 +427,7 @@ class ProxyController extends Controller
         ])->first();
 
         if (empty($ss)) {
-            $name = "$server->country-" . $server->name;
+            $name = "[$server->country]" . $server->name;
             $ss = Proxy::create([
                 'name' => $name,
                 'type' => 'ss',
@@ -508,14 +508,10 @@ class ProxyController extends Controller
         }
         $base['inbounds'][] = $this->makeXrayInboundConfig($vless);
 
-        $base['policy'] = [
-            'levels' => [
-                '0' => [
-                    'handshake' => 3,
-                    'connIdle' => 200,
-                ],
-            ],
-        ];
+        // $base['policy']['levels']['0']= [
+        //             'handshake' => 3,
+        //             'connIdle' => 200,
+        // ];
 
         return response()->json($base, 200, [], 448);
     }

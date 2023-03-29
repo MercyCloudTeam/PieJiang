@@ -3,6 +3,7 @@
 use App\Http\Controllers\IndexController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProxyController;
+use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\ServerController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,7 @@ use Inertia\Inertia;
 
 Route::get('/', [IndexController::class,'index']);
 Route::get('/ca',[IndexController::class,'ca'])->name('ca');
+
 
 Route::get('/dashboard', [IndexController::class,'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 

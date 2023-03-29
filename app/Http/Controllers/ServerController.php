@@ -11,6 +11,64 @@ use Inertia\Inertia;
 class ServerController extends Controller
 {
 
+    public function certKey(Server $server, Request $request){
+        if(empty($server->config['key'])){
+            $certController = new CertController();
+            $certController->serverCert($server);
+            $server = $server->fresh();
+        }
+        if($request->download){
+            return response()->make($server->config['key'], 200)->header('Content-Type', 'text/plain')
+            ->header('Content-Disposition', 'attachment; filename='.$server->domain.'.key"');
+        }
+        return response()->make($server->config['key'], 200)->header('Content-Type', 'text/plain');
+    }
+
+    public function cert(Server $server, Request $request){
+        if(empty($server->config['cert'])){
+            $certController = new CertController();
+            $certController->serverCert($server);
+            $server = $server->fresh();
+        }
+        if($request->download){
+            return response()->make($server->config['cert'], 200)->header('Content-Type', 'text/plain')
+            ->header('Content-Disposition', 'attachment; filename="'.$server->domain.'.pem"');
+        }
+        return response()->make($server->config['cert'], 200)->header('Content-Type', 'text/plain');
+    }
+
+    public function bash(Server $server, Request $request)
+    {
+        $bash = [
+            '#!/bin/bash' ,
+            'mkdir -p /ssl',
+            'curl "'.route('api.server.cert.key', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" > /ssl/cert.key',
+            'curl "'.route('api.server.cert', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" > /ssl/cert.pem',
+            'chmod -R 777 /ssl',
+            'echo -n "Server or Access? [s/a]:"',
+            'read mode',
+            'if [ "$mode" = "s" ]; then',
+            'curl "'.route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" >  /usr/local/etc/xray/config.json',
+            'elif [ "$mode" = "a" ]; then',
+            'curl "'.route('api.server.xray.config.access', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" >  /usr/local/etc/xray/config.json',
+            'fi',
+            'service xray restart',
+            'service xray status',
+            'echo "Done! PieJiang Love You!"'
+        ];
+        //is server or access
+
+        //bash to file
+        $bash = implode(PHP_EOL,$bash);
+
+
+        if($request->download){
+            return response()->make($bash, 200)->header('Content-Type', 'text/plain')->header('Content-Disposition', 'attachment; filename="install.sh"');
+        }else{
+            return response()->make($bash, 200)->header('Content-Type', 'text/plain');
+        }
+    }
+
     public function index()
     {
         return Inertia::render('Server/Index', [

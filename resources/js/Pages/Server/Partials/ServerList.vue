@@ -4,7 +4,20 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import {Link, useForm, usePage} from '@inertiajs/vue3';
 import {ref} from "vue";
+import useClipboard from 'vue-clipboard3'
 
+const downloadInitialBash = ref('');
+const { toClipboard } = useClipboard()
+
+const copyInitialBash = async (url) => {
+    try {
+        await toClipboard("curl -L -o initial-piejiang.sh " + url + " || wget -O initial-piejiang.sh " + url + " && bash initial-piejiang.sh")
+        console.log('Copied to clipboard')
+      } catch (e) {
+        console.error(e)
+      }
+
+}
 
 const props = defineProps({
     servers: Array,
@@ -49,6 +62,9 @@ const user = usePage().props.auth.user;
                             <ul tabindex="0" class="dropdown-content text-sm menu p-2 shadow bg-base-100 rounded-box w-52">
                                 <li><a :href="route('api.server.xray.config',{server:item.id,token:item.token})">Xray Server URL</a></li>
                                 <li><a :href="route('api.server.xray.config.access',{server:item.id,token:item.token})">Xray Access URL</a></li>
+                                <li><a @click="copyInitialBash(route('api.server.bash',{server:item.id,token:item.token}))">Copy Initial Bash</a></li>
+                                <li><a :href="route('api.server.cert',{server:item.id,token:item.token,download:true})">Download Cert</a></li>
+                                <li><a :href="route('api.server.cert.key',{server:item.id,token:item.token,download:true})">Download Cert Key</a></li>
                             </ul>
                         </div>
                     </td>
