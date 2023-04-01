@@ -26,7 +26,29 @@ class ProxyController extends Controller
         'vless',
         'vmess',
         'ss',
+        'ss2022'
     ];
+
+    public function shadowrocketConfig()
+    {
+        $proxies = Proxy::all();
+        $result = [];
+        foreach ($proxies as $proxy) {
+            switch($proxy->type){
+                case 'ss':
+                    $result[] = "ss://{$proxy->config['method']}:{$proxy->config['password']}@{$proxy->ip}:{$proxy->port}";
+                    break;
+            }
+        }
+
+    }
+
+
+    public function destroy(Proxy $proxy)
+    {
+        $proxy->delete();
+        return Redirect::route('proxies.index');
+    }
 
     public function storeAccess(Request $request)
     {
@@ -135,6 +157,7 @@ class ProxyController extends Controller
                 ];
                 break;
             case 'ss':
+            case 'ss2022':
                 $result = [
                     'protocol' => 'shadowsocks',
                     'tag' => $nameTag,
@@ -259,6 +282,7 @@ class ProxyController extends Controller
                     //Trojan
                     'port' => $proxy->port,
                     'protocol' => 'trojan',
+                    'listen' => $proxy->config['listen'] ?? '0.0.0.0',
                     'tag' => $nameTag,
 //            'domain'=>Str::random().'',
                     'settings' => [
@@ -280,9 +304,10 @@ class ProxyController extends Controller
                 ];
                 break;
             case 'ss':
+            case 'ss2022':
                 $result = [
-                    //Shadowsocks-2022
                     'port' => $proxy->port,
+                    'listen' => $proxy->config['listen'] ?? '0.0.0.0',
                     'tag' => $nameTag,
                     'protocol' => 'shadowsocks',
                     'settings' => [
@@ -297,9 +322,10 @@ class ProxyController extends Controller
                 ];
                 break;
             case 'vmess':
-                $result = [
+                $temp = [
                     //vmess
                     'port' => $proxy->port,
+                    'listen' => $proxy->config['listen'] ?? '0.0.0.0',
                     'tag' => $nameTag,
                     'protocol' => 'vmess',
                     'settings' => [
@@ -307,17 +333,23 @@ class ProxyController extends Controller
                             ['id' => $proxy->config['uuid'], 'alterId' => $proxy->config['alterId']]
                         ],
                     ],
-                    'streamSettings' => [
-                        'network' => 'ws',
-                        'security' => 'none',
-                    ],
+
                 ];
+
+                if ($proxy->config['network'] === 'ws') {
+                    $result['streamSettings'] = [
+                        'network' => 'ws',
+                        'security'=>'none',
+                    ];
+                }
+                $result = array_merge($temp, $result);
                 break;
 
             case 'vless':
                 $result = [
                     //VLESS
                     'port' => $proxy->port,
+                    'listen' => $proxy->config['listen'] ?? '0.0.0.0',
                     'tag' => $nameTag,
                     'protocol' => 'vless',
                     'settings' => [
@@ -413,6 +445,10 @@ class ProxyController extends Controller
             ['server_id', '=', $server->id],
             ['type', '=', 'ss'],
         ])->first();
+        $ss2022 = Proxy::where([
+            ['server_id', '=', $server->id],
+            ['type', '=', 'ss2022'],
+        ])->first();
         $vless = Proxy::where([
             ['server_id', '=', $server->id],
             ['type', '=', 'vless'],
@@ -428,6 +464,7 @@ class ProxyController extends Controller
 
         if (empty($ss)) {
             $name = "[$server->country]" . $server->name;
+            // openssl rand -base64 16
             $ss = Proxy::create([
                 'name' => $name,
                 'type' => 'ss',
@@ -435,17 +472,37 @@ class ProxyController extends Controller
                 'server_id' => $server->id,
                 'config' => [
                     'password' => Str::random(16),
-                    'method' => '2022-blake3-aes-128-gcm',
+                    'method' => 'chacha20-poly1305',
                     'udp' => true,
+                    'listen' => $server->ip,
                 ]
             ]);
         }
         $base['inbounds'][] = $this->makeXrayInboundConfig($ss);
 
+        if (empty($ss2022)) {
+            $name = "[$server->country]" . $server->name;
+            // openssl rand -base64 16
+            $ss2022 = Proxy::create([
+                'name' => $name,
+                'type' => 'ss2022',
+                'port' => mt_rand(10000, 65535),
+                'server_id' => $server->id,
+                'config' => [
+                    'password' => base64_encode(Str::random(16)),
+                    'method' => '2022-blake3-aes-128-gcm',
+                    'udp' => true,
+                    'listen' => $server->ip,
+                ]
+            ]);
+        }
+        $base['inbounds'][] = $this->makeXrayInboundConfig($ss2022);
+
         if (empty($trojan)) {
             $name = "[$server->country]" . $server->name;
             $trojan = Proxy::create([
                 'name' => $name,
+                'listen' => $server->ip,
                 'type' => 'trojan',
                 'port' => 3000,
                 'server_id' => $server->id,
@@ -456,8 +513,10 @@ class ProxyController extends Controller
                         [
                             'certificateFile' => '/ssl/cert.pem',
                             'keyFile' => '/ssl/cert.key',
+
                         ]
                     ],
+                    'listen' => $server->ip,
                 ]
             ]);
         }
@@ -467,12 +526,16 @@ class ProxyController extends Controller
             $name = "[$server->country]" . $server->name;
             $vmess = Proxy::create([
                 'name' => $name,
+                'listen' => $server->ip,
                 'type' => 'vmess',
                 'port' => mt_rand(10000, 65535),
                 'server_id' => $server->id,
                 'config' => [
                     'uuid' => Str::uuid(),
                     'alterId' => 0,
+                    'listen' => $server->ip,
+                    'network' => 'ws',
+
                 ]
             ]);
         }
@@ -494,6 +557,7 @@ class ProxyController extends Controller
                 'type' => 'vless',
                 'port' => 443,
                 'server_id' => $server->id,
+                'listen' => $server->ip,
                 'config' => [
                     'uuid' => Str::uuid(),
                     //x25519 key
@@ -503,6 +567,8 @@ class ProxyController extends Controller
 
                     'spiderX' => '/',
                     'serverName' => ['www.lovelive-anime.jp', 'lovelive-anime.jp'],
+
+                    'listen' => $server->ip,
                 ]
             ]);
         }
@@ -592,7 +658,7 @@ class ProxyController extends Controller
                         'port' => $proxy->port,
                         'password' => $proxy->config['password'],
                         'sni' => $proxy->config['sni'] ?? $proxy->server->domain,
-                        'skip-cert-verify' => $proxy->config['skip-cert-verify'] ?? false,
+                        'skip-cert-verify' => $proxy->config['skip-cert-verify'] ?? true,
                         'udp' => $proxy->config['udp'] ?? false,
                     ];
                     break;
@@ -622,12 +688,15 @@ class ProxyController extends Controller
                     if ($proxy->config['method'] == '2022-blake3-aes-128-gcm') {
                         break;
                     }
+                    if($proxy->config['method'] == 'chacha20-poly1305'){
+                        $method = 'chacha20-ietf-poly1305';
+                    }
                     $result[] = [
                         'name' => $proxy->display_name,
                         'type' => 'ss',
                         'server' => $proxy->server->ip,
                         'port' => $proxy->port,
-                        'cipher' => $proxy->config['method'],
+                        'cipher' => $method ?? $proxy->config['method'],
                         'password' => $proxy->config['password'],
                         'udp' => $proxy->config['udp'] ?? false,
                     ];
@@ -643,6 +712,7 @@ class ProxyController extends Controller
                         'cipher' => $proxy->config['cipher'] ?? "auto",
                         'skip-cert-verify' => $proxy->config['skip-cert-verify'] ?? true,
                     ];
+                    // dd($proxy->config);
                     if (!empty($proxy->config['network']) && $proxy->config['network'] == 'ws') {
                         $temp['network'] = 'ws';
 //                        $temp['ws-path'] = $proxy->config['ws-path'];
@@ -691,7 +761,7 @@ class ProxyController extends Controller
 
         $general['proxies'] = $proxies;
 
-        $proxiesNameList = array_merge($proxiesNameList, ['DIRECT', 'REJECT']);
+        $proxiesNameList = array_merge(['DIRECT', 'REJECT'],$proxiesNameList);
         $rules = [];
         $proxyGroups = [];
         $proxyGroups[] = [
@@ -709,12 +779,14 @@ class ProxyController extends Controller
             ]
         ];
 
-        $proxiesNameList[] = 'Proxy';
+        // $proxiesNameList[] = 'Proxy';
         $proxyGroups[] = [
             'name' => 'ByPass',
             'type' => 'select',
-            'proxies' => $proxiesNameList
+            'proxies' => array_merge($proxiesNameList, ['Proxy'])
         ];
+        array_unshift($proxiesNameList, "Proxy");
+
 
         foreach ($groups as $group) {
             $proxyGroups[] = [

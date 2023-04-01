@@ -11,6 +11,22 @@ const props = defineProps({
 });
 const user = usePage().props.auth.user;
 
+
+const deleteProxyForm = useForm({
+});
+
+
+
+const deleteProxy = (id) => {
+    deleteProxyForm.delete(route('proxies.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => deleteProxyForm.reset(),
+        onError: () => {
+        },
+    });
+}
+
+
 </script>
 
 <template>
@@ -39,7 +55,12 @@ const user = usePage().props.auth.user;
                     <td>[{{item.server.id}}]{{item.server.name}}</td>
                     <td>{{item.domain}}</td>
                     <td>
-
+                        <!-- Deleate -->
+                        <button @click="deleteProxy(item.id)" >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </td>
                 </tr>
                 </tbody>

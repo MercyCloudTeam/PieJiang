@@ -24,6 +24,17 @@ const props = defineProps({
 });
 const user = usePage().props.auth.user;
 
+const destoryCert = async (id,token) => {
+    //delete request
+    //
+    const {data} = await axios.delete(route('api.server.cert.destroy', {server: id,token:token}));
+    // const {data} = await axios.post(route('api.server.cert.destroy', {server: id}));
+    if (data.status === 'success') {
+        window.location.reload();
+    }
+}
+
+
 </script>
 
 <template>
@@ -65,8 +76,10 @@ const user = usePage().props.auth.user;
                                 <li><a @click="copyInitialBash(route('api.server.bash',{server:item.id,token:item.token}))">Copy Initial Bash</a></li>
                                 <li><a :href="route('api.server.cert',{server:item.id,token:item.token,download:true})">Download Cert</a></li>
                                 <li><a :href="route('api.server.cert.key',{server:item.id,token:item.token,download:true})">Download Cert Key</a></li>
+                                <li><a @click="destoryCert(item.id,item.token)">Destroy Cert</a></li>
                             </ul>
                         </div>
+
                     </td>
                 </tr>
                 </tbody>
