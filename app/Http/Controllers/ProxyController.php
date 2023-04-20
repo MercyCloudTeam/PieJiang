@@ -243,24 +243,22 @@ class ProxyController extends Controller
                     ],
                 ];
                     if (isset($proxy->config['security']) && $proxy->config['security'] == 'reality') {
-                        $result = array($result, [
-                            'streamSettings' => [
-                                'network' => 'grpc',
-                                'security' => 'reality',
-                                'realitySettings' => [
-                                    'show' => false,
-                                    'fingerprint' => "chrome",
-                                    'serverNames' => $proxy->config['serverName'][0],
-                                    'publicKey' => $proxy->config['pubKey'],
-                                    "shortIds" => "",
-                                    'spiderX'=>$proxy->config['spiderX'] ?? "",
-                                ],
-                                'grpcSettings' => [
-                                    'serviceName' => 'grpc',
-                                    'multiMode' => true
-                                ],
+                        $result['streamSettings'] =  [
+                            'network' => 'grpc',
+                            'security' => 'reality',
+                            'realitySettings' => [
+                                'show' => false,
+                                'fingerprint' => "chrome",
+                                'serverNames' => $proxy->config['serverName'][0],
+                                'publicKey' => $proxy->config['pubKey'],
+                                "shortIds" => "",
+                                'spiderX'=>$proxy->config['spiderX'] ?? "",
                             ],
-                        ]);
+                            'grpcSettings' => [
+                                'serviceName' => 'grpc',
+                                'multiMode' => true
+                            ],
+                        ];
                     }
                     break;
                 break;
@@ -614,6 +612,7 @@ class ProxyController extends Controller
         $base['inbounds'] = [];
         foreach ($access as $item) {
             $proxy = $item->proxy;
+            // dd( $this->makeXrayOutboundConfig($proxy) );
             $base['outbounds'][] = $this->makeXrayOutboundConfig($proxy);
 //            dd($proxy);
             //out in

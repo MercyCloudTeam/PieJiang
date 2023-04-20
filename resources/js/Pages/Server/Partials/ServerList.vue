@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput.vue';
 import {Link, useForm, usePage} from '@inertiajs/vue3';
 import {ref} from "vue";
 import useClipboard from 'vue-clipboard3'
+import { VAceEditor } from 'vue3-ace-editor';
 
 const downloadInitialBash = ref('');
 const { toClipboard } = useClipboard()
@@ -42,6 +43,7 @@ const destoryCert = async (id,token) => {
         <header>
             <h2 class="text-lg font-medium text-gray-900">Server List</h2>
         </header>
+
         <div class="overflow-x-auto">
             <table class="table table-zebra w-full">
                 <!-- head -->
@@ -66,20 +68,20 @@ const destoryCert = async (id,token) => {
                     <td>{{ item.status }}</td>
                     <td >
 <!--                        <p><a :href="route('api.server.xray.config',{server:item.id,token:item.token})">Xray Server Config URL</a></p>-->
+
                         <div class="dropdown dropdown-left">
                             <label tabindex="0" class="btn btn-circle btn-ghost btn-xs text-info">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </label>
                             <ul tabindex="0" class="dropdown-content text-sm menu p-2 shadow bg-base-100 rounded-box w-52">
-                                <li><a :href="route('api.server.xray.config',{server:item.id,token:item.token})">Xray Server URL</a></li>
-                                <li><a :href="route('api.server.xray.config.access',{server:item.id,token:item.token})">Xray Access URL</a></li>
+                                <li><a target="_blank" :href="route('api.server.xray.config',{server:item.id,token:item.token})">Xray Server URL</a></li>
+                                <li><a target="_blank" :href="route('api.server.xray.config.access',{server:item.id,token:item.token})">Xray Access URL</a></li>
                                 <li><a @click="copyInitialBash(route('api.server.bash',{server:item.id,token:item.token}))">Copy Initial Bash</a></li>
-                                <li><a :href="route('api.server.cert',{server:item.id,token:item.token,download:true})">Download Cert</a></li>
-                                <li><a :href="route('api.server.cert.key',{server:item.id,token:item.token,download:true})">Download Cert Key</a></li>
+                                <li><a target="_blank" :href="route('api.server.cert',{server:item.id,token:item.token,download:true})">Download Cert</a></li>
+                                <li><a target="_blank" :href="route('api.server.cert.key',{server:item.id,token:item.token,download:true})">Download Cert Key</a></li>
                                 <li><a @click="destoryCert(item.id,item.token)">Destroy Cert</a></li>
                             </ul>
                         </div>
-
                     </td>
                 </tr>
                 </tbody>
