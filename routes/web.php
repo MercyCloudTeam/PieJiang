@@ -46,6 +46,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/proxies',[ProxyController::class,'index'])->name('proxies.index');
     Route::patch('/proxies/{proxy}',[ProxyController::class,'update'])->name('proxies.update');
     Route::delete('/proxies/{proxy}',[ProxyController::class,'destroy'])->name('proxies.destroy');
+
+    Route::get('/proxy-groups/{proxyGroup}',[ProxyController::class,'proxyGroups'])->name('proxy-groups.index');
+    Route::delete('/proxy-groups/{proxyGroup}',[ProxyController::class,'proxyGroupsDelete'])->name('proxy-groups.destroy');
+    Route::post('/proxy-groups/create',[ProxyController::class,'proxyGroupsStore'])->name('proxy-groups.store');
 });
 
 require __DIR__.'/auth.php';

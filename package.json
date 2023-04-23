@@ -17,6 +17,7 @@
         "vue": "^3.2.41"
     },
     "dependencies": {
+        "@kyvg/vue3-notification": "^2.9.0",
         "daisyui": "^2.51.5",
         "vue-clipboard3": "^2.0.0",
         "vue3-ace-editor": "^2.2.2"

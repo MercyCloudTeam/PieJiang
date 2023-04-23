@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Access;
+use App\Models\Proxy;
 use App\Models\Server;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -10,6 +12,19 @@ use Inertia\Inertia;
 
 class ServerController extends Controller
 {
+
+    public function destroy(Server $server)
+    {
+        //delete proxy
+//        $server->proxies->delete();
+        Proxy::where('server_id', $server->id)->delete();
+        //delete access
+        Access::where('server_id', $server->id)->delete();
+        //delete server
+        $server->delete();
+
+        return redirect()->route('servers.index');
+    }
 
     public function destroyCert(Server $server)
     {

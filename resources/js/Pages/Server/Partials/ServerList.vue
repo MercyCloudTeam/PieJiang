@@ -6,6 +6,7 @@ import {Link, useForm, usePage} from '@inertiajs/vue3';
 import {ref} from "vue";
 import useClipboard from 'vue-clipboard3'
 import { VAceEditor } from 'vue3-ace-editor';
+import { notify } from "@kyvg/vue3-notification";
 
 const downloadInitialBash = ref('');
 const { toClipboard } = useClipboard()
@@ -14,8 +15,20 @@ const copyInitialBash = async (url) => {
     try {
         await toClipboard("curl -L -o initial-piejiang.sh " + url + " || wget -O initial-piejiang.sh " + url + " && bash initial-piejiang.sh")
         console.log('Copied to clipboard')
+        notify({
+            title: "Copied to clipboard",
+            text: "The initial bash script has been copied to your clipboard",
+            type: "success",
+            duration: 3000,
+        });
       } catch (e) {
         console.error(e)
+        notify({
+            title: "Failed to copy to clipboard",
+            text: "The initial bash script failed to copy to your clipboard",
+            type: "error",
+            duration: 3000,
+        });
       }
 
 }
@@ -31,8 +44,32 @@ const destoryCert = async (id,token) => {
     const {data} = await axios.delete(route('api.server.cert.destroy', {server: id,token:token}));
     // const {data} = await axios.post(route('api.server.cert.destroy', {server: id}));
     if (data.status === 'success') {
+        notify({
+            title: "Success",
+            text: "Certificate Deleted",
+            type: "success",
+            duration: 3000,
+        });
         window.location.reload();
     }
+}
+const deleteServerForm = useForm({
+});
+const deleteServer = async (id) => {
+    deleteServerForm.delete(route('servers.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            deleteServerForm.reset();
+            notify({
+                title: "Success",
+                text: "Server Deleted",
+                type: "success",
+                duration: 3000,
+            });
+        },
+        onError: () => {
+        },
+    });
 }
 
 
@@ -81,6 +118,13 @@ const destoryCert = async (id,token) => {
                                 <li><a target="_blank" :href="route('api.server.cert.key',{server:item.id,token:item.token,download:true})">Download Cert Key</a></li>
                                 <li><a @click="destoryCert(item.id,item.token)">Destroy Cert</a></li>
                             </ul>
+
+                            <!-- Deleate -->
+                            <button @click="deleteServer(item.id)" >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
                     </td>
                 </tr>

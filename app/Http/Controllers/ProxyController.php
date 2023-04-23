@@ -29,6 +29,53 @@ class ProxyController extends Controller
         'ss2022'
     ];
 
+    public function update(Proxy $proxy,Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'required|string',
+            'type' => 'required|in:' . implode(',', $this->types),
+            'config' => 'required|json',
+            'domain' => 'nullable|string',
+        ]);
+        $proxy->update([
+            'name' => $request->name,
+            'type' => $request->type,
+            'domain' => $request->domain,
+            'config' => json_decode($request->config, true),
+        ]);
+
+        return Redirect::route('proxies.index');
+
+    }
+
+    public function proxyGroupsStore(Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'required|string',
+        ]);
+        ProxyGroup::create([
+            'name' => $request->name,
+            'type' => 'select',
+        ]);
+        return Redirect::route('proxies.index');
+    }
+
+    public function proxyGroupsDelete(ProxyGroup $proxyGroup)
+    {
+        Rule::where('proxy_group', $proxyGroup->name)->delete();
+        $proxyGroup->delete();
+        return Redirect::route('proxies.index');
+    }
+
+    public function proxyGroups(ProxyGroup $proxyGroup)
+    {
+        $rules = $proxyGroup->rules;
+        return Inertia::render('ProxyGroups/Show', [
+            'proxyGroup' => $proxyGroup,
+            'rules' => $rules,
+        ]);
+    }
+
     public function shadowrocketConfig()
     {
         $proxies = Proxy::all();
@@ -118,6 +165,7 @@ class ProxyController extends Controller
             'proxies' => Proxy::all()->load('server'),
             'proxyGroups' => ProxyGroup::all(),
             'servers' => Server::all(),
+            'types' => $this->types,
         ]);
     }
 
@@ -222,7 +270,7 @@ class ProxyController extends Controller
                     ],
                 ];
                 break;
-                case 'vless':
+            case 'vless':
                 $result = [
                     'protocol' => 'vless',
                     'tag' => $nameTag,
@@ -242,25 +290,25 @@ class ProxyController extends Controller
                         ]
                     ],
                 ];
-                    if (isset($proxy->config['security']) && $proxy->config['security'] == 'reality') {
-                        $result['streamSettings'] =  [
-                            'network' => 'grpc',
-                            'security' => 'reality',
-                            'realitySettings' => [
-                                'show' => false,
-                                'fingerprint' => "chrome",
-                                'serverNames' => $proxy->config['serverName'][0],
-                                'publicKey' => $proxy->config['pubKey'],
-                                "shortIds" => "",
-                                'spiderX'=>$proxy->config['spiderX'] ?? "",
-                            ],
-                            'grpcSettings' => [
-                                'serviceName' => 'grpc',
-                                'multiMode' => true
-                            ],
-                        ];
-                    }
-                    break;
+                if (isset($proxy->config['security']) && $proxy->config['security'] == 'reality') {
+                    $result['streamSettings'] =  [
+                        'network' => 'grpc',
+                        'security' => 'reality',
+                        'realitySettings' => [
+                            'show' => false,
+                            'fingerprint' => "chrome",
+                            'serverNames' => $proxy->config['serverName'][0],
+                            'publicKey' => $proxy->config['pubKey'],
+                            "shortIds" => "",
+                            'spiderX'=>$proxy->config['spiderX'] ?? "",
+                        ],
+                        'grpcSettings' => [
+                            'serviceName' => 'grpc',
+                            'multiMode' => true
+                        ],
+                    ];
+                }
+                break;
                 break;
         }
 

@@ -8,9 +8,12 @@ import DangerButton from '@/Components/DangerButton.vue';
 import {Link, useForm, usePage} from '@inertiajs/vue3';
 import {ref} from "vue";
 import Modal from '@/Components/Modal.vue';
+import { VAceEditor } from 'vue3-ace-editor';
+import { notify } from "@kyvg/vue3-notification";
 
 const props = defineProps({
     proxies: Array,
+    types: Array,
 });
 const user = usePage().props.auth.user;
 const selectedProxy = ref(null);
@@ -20,37 +23,72 @@ const deleteProxyForm = useForm({
 });
 
 const updateProxyForm = useForm({
+    id: '',
     name: '',
     type: '',
-    server: '',
     domain: '',
     config: '',
 });
 
 const closeModal = () => {
     openUpdateModal.value = false;
-
-    form.reset();
+    updateProxyForm.reset();
 };
 
 const openUpdateProxyModal = (proxy) => {
     updateProxyForm.reset();
     selectedProxy.value = proxy;
-    updateProxyForm.setData({
-        name: proxy.name,
-        type: proxy.type,
-        server: proxy.server.id,
-        domain: proxy.domain,
-        config: proxy.config,
-    });
+    updateProxyForm.name = proxy.name;
+    updateProxyForm.type = proxy.type;
+    updateProxyForm.domain = proxy.domain;
+    updateProxyForm.id = proxy.id;
+    updateProxyForm.config = JSON.stringify(proxy.config, null, 4);
     openUpdateModal.value = true;
 }
 
 const deleteProxy = (id) => {
     deleteProxyForm.delete(route('proxies.destroy', id), {
         preserveScroll: true,
-        onSuccess: () => deleteProxyForm.reset(),
+        onSuccess: () => {
+            deleteProxyForm.reset();
+            notify({
+                title: "Success",
+                text: "Proxy deleted successfully",
+                type: "success",
+                duration: 3000,
+            });
+        },
         onError: () => {
+            notify({
+                title: "Error",
+                text: "Proxy delete failed",
+                type: "error",
+                duration: 3000,
+            });
+        },
+    });
+}
+
+const updateProxy = () => {
+    updateProxyForm.patch(route('proxies.update', updateProxyForm.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            updateProxyForm.reset();
+            openUpdateModal.value = false;
+            notify({
+                title: "Success",
+                text: "Proxy updated successfully",
+                type: "success",
+                duration: 3000,
+            });
+        },
+        onError: () => {
+            notify({
+                title: "Error",
+                text: "Proxy update failed",
+                type: "error",
+                duration: 3000,
+            });
         },
     });
 }
@@ -100,28 +138,71 @@ const deleteProxy = (id) => {
             </table>
         </div>
 
-        <Modal :show="openUpdateProxyModal" @close="closeModal">
+        <Modal :show="openUpdateModal" @close="closeModal">
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900">
-                    Are you sure you want to delete your account?
+                    Edit Proxy
                 </h2>
 
-                <p class="mt-1 text-sm text-gray-600">
-                    Once your account is deleted, all of its resources and data will be permanently deleted. Please
-                    enter your password to confirm you would like to permanently delete your account.
-                </p>
+                <div class="mt-4">
+                    <InputLabel for="name" value="Name" />
+                    <TextInput
+                        id="name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        v-model="updateProxyForm.name"
+                        :class="{ 'border-red-300': updateProxyForm.errors.name }"
+                    />
+                    <InputError :message="updateProxyForm.errors.name" />
+                </div>
+
+                <div>
+                    <InputLabel for="type" value="Type" />
+                    <select
+                        id="type"
+                        class="mt-1 block w-full"
+                        v-model="updateProxyForm.type"
+                        :class="{ 'border-red-300': updateProxyForm.errors.type }"
+                    >
+                        <option  v-for="item in props.types">{{ item }}</option>
+                    </select>
+                    <InputError :message="updateProxyForm.errors.type" />
+                </div>
+
+
+                <div class="mt-4">
+                    <InputLabel for="domain" value="Domain" />
+                    <TextInput
+                        id="name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        v-model="updateProxyForm.domain"
+                        :class="{ 'border-red-300': updateProxyForm.errors.domain }"
+                    />
+                    <InputError :message="updateProxyForm.errors.domain" />
+                </div>
+
+                <div class="mt-4">
+                    <InputLabel for="config" value="Config" />
+                    <v-ace-editor
+                        v-model:value="updateProxyForm.config"
+                        style="height: 20rem"
+                    />
+                    <InputError :message="updateProxyForm.errors.config" />
+                </div>
 
 
                 <div class="mt-6 flex justify-end">
                     <SecondaryButton @click="closeModal"> Cancel </SecondaryButton>
 
-                    <DangerButton
+                    <PrimaryButton
                         class="ml-3"
                         :class="{ 'opacity-25': updateProxyForm.processing }"
                         :disabled="updateProxyForm.processing"
+                        @click="updateProxy"
                     >
-                        Delete Account
-                    </DangerButton>
+                        Update
+                    </PrimaryButton>
                 </div>
 
             </div>
