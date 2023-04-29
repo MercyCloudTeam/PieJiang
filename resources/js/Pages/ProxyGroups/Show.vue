@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import RulesList from '@/Pages/ProxyGroups/Partials/RulesList.vue';
+import AddRuleForm from '@/Pages/ProxyGroups/Partials/AddRuleForm.vue';
 
 defineProps({
     rules: Array,
@@ -24,8 +25,9 @@ defineProps({
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <RulesList :rules="rules" />
                 </div>
-
-
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <AddRuleForm :proxyGroup="proxyGroup" />
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

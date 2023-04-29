@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class CertCommand extends UserCommand
 {
-    protected $name = 'deepl';                      // Your command's name
-    protected $description = 'Deepl'; // Your command description
-    protected $usage = '/deepl';                    // Usage of your command
+    protected $name = 'cert';                      // Your command's name
+    protected $description = 'Cert'; // Your command description
+    protected $usage = '/cert';                    // Usage of your command
     protected $version = '1.0.0';                  // Version of your command
 
 
@@ -56,18 +56,4 @@ class CertCommand extends UserCommand
         return Request::sendMessage($data);        // Send message!
     }
 
-
-    public function requestDeeplApi($lang , $text)
-    {
-
-        $resp = Http::withHeaders([
-            'Authorization'=> 'DeepL-Auth-Key ' . $this->apiToken,
-        ])->timeout(4)->post($this->apiEndpoint, [
-            'text' => [$text],
-            'target_lang' => $lang,
-        ]);
-
-        $text = $resp->json()['translations'][0]['text'];
-        return $text;
-    }
 }

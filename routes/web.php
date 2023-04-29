@@ -3,6 +3,7 @@
 use App\Http\Controllers\IndexController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProxyController;
+use App\Http\Controllers\RulesController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\ServerController;
 use Illuminate\Foundation\Application;
@@ -47,9 +48,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/proxies/{proxy}',[ProxyController::class,'update'])->name('proxies.update');
     Route::delete('/proxies/{proxy}',[ProxyController::class,'destroy'])->name('proxies.destroy');
 
-    Route::get('/proxy-groups/{proxyGroup}',[ProxyController::class,'proxyGroups'])->name('proxy-groups.index');
-    Route::delete('/proxy-groups/{proxyGroup}',[ProxyController::class,'proxyGroupsDelete'])->name('proxy-groups.destroy');
-    Route::post('/proxy-groups/create',[ProxyController::class,'proxyGroupsStore'])->name('proxy-groups.store');
+    Route::get('/proxy-groups/{proxyGroup}',[RulesController::class,'proxyGroups'])->name('proxy-groups.index');
+    Route::delete('/proxy-groups/{proxyGroup}',[RulesController::class,'proxyGroupsDelete'])->name('proxy-groups.destroy');
+    Route::post('/proxy-groups/create',[RulesController::class,'proxyGroupsStore'])->name('proxy-groups.store');
+    Route::delete('/proxy-groups/rule/{rule}',[RulesController::class,'ruleDestroy'])->name('proxy-groups.rule.destroy');
+    Route::put('/proxy-groups/{proxyGroup}/rule',[RulesController::class,'ruleStore'])->name('proxy-groups.rule.store');
 });
 
 require __DIR__.'/auth.php';

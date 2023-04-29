@@ -13,6 +13,29 @@ use Inertia\Inertia;
 class ServerController extends Controller
 {
 
+    public function update(Request $request, Server $server)
+    {
+        $this->validate($request, [
+            'domain' => 'required|string|max:255',
+            'ip' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'country' => 'required|string|max:255',
+            'config' => 'nullable|json',
+        ]);
+
+        $server->update([
+            'domain' => $request->domain,
+            'ip' => $request->ip,
+            'name' => $request->name,
+            'country' => $request->country,
+            'config' => json_decode($request->config, true),
+        ]);
+        Proxy::where('server_id', $server->id)->update(
+            ['name'=> "[$request->country]" . $request->name]
+        );
+        return redirect()->route('servers.index');
+    }
+
     public function destroy(Server $server)
     {
         //delete proxy
@@ -35,41 +58,44 @@ class ServerController extends Controller
         return response()->json(['message' => 'success']);
     }
 
-    public function certKey(Server $server, Request $request){
-        if(empty($server->config['key'])){
+    public function certKey(Server $server, Request $request)
+    {
+        if (empty($server->config['key'])) {
             $certController = new CertController();
             $certController->serverCert($server);
             $server = $server->fresh();
         }
-        if($request->download){
+        if ($request->download) {
             return response()->make($server->config['key'], 200)->header('Content-Type', 'text/plain')
-            ->header('Content-Disposition', 'attachment; filename='.$server->domain.'.key"');
+                ->header('Content-Disposition', 'attachment; filename=' . $server->domain . '.key"');
         }
         return response()->make($server->config['key'], 200)->header('Content-Type', 'text/plain');
     }
 
-    public function cert(Server $server, Request $request){
-        if(empty($server->config['cert'])){
+    public function cert(Server $server, Request $request)
+    {
+        if (empty($server->config['cert'])) {
             $certController = new CertController();
             $certController->serverCert($server);
             $server = $server->fresh();
         }
-        if($request->download){
+        if ($request->download) {
             return response()->make($server->config['cert'], 200)->header('Content-Type', 'text/plain')
-            ->header('Content-Disposition', 'attachment; filename="'.$server->domain.'.pem"');
+                ->header('Content-Disposition', 'attachment; filename="' . $server->domain . '.pem"');
         }
         return response()->make($server->config['cert'], 200)->header('Content-Type', 'text/plain');
     }
 
-    public function bindBash(Request $request, Server $server){
+    public function bindBash(Request $request, Server $server)
+    {
         $bash = [
-            '#!/bin/bash' ,
-            'curl "'.route('api.dns.rand.domain', [ 'token' => $request->token,'download'=>true,'ip'=>$server->ip]).'" > /etc/bind/'.env('RAND_DOMAIN').'.zone',
+            '#!/bin/bash',
+            'curl "' . route('api.dns.rand.domain', ['token' => $request->token, 'download' => true, 'ip' => $server->ip]) . '" > /etc/bind/' . env('RAND_DOMAIN') . '.zone',
             // 'echo "Include \\"/etc/bind/db.'.env('RAND_DOMAIN').'\\";" > /etc/bind/named.conf.local',
             //build named.conf.local
-            'echo "zone \\"'.env('RAND_DOMAIN').'\\" {" > /etc/bind/named.conf.local',
+            'echo "zone \\"' . env('RAND_DOMAIN') . '\\" {" > /etc/bind/named.conf.local',
             'echo "    type master;" >> /etc/bind/named.conf.local',
-            'echo "    file \\"/etc/bind/'.env('RAND_DOMAIN').'.zone\\";" >> /etc/bind/named.conf.local',
+            'echo "    file \\"/etc/bind/' . env('RAND_DOMAIN') . '.zone\\";" >> /etc/bind/named.conf.local',
             'echo "};" >> /etc/bind/named.conf.local',
 
             'sleep 1',
@@ -80,16 +106,16 @@ class ServerController extends Controller
             //save script
             'mkdir -p /scripts',
             'echo "#!/bin/bash" > /scripts/bind9-config-updare.sh',
-            'echo "curl \\"'.route('api.dns.rand.domain', [ 'token' => $request->token,'download'=>true,'ip'=>$server->ip]).'\\" > /etc/bind/'.env('RAND_DOMAIN').'.zone" >> /scripts/bind9-config-updare.sh',
+            'echo "curl \\"' . route('api.dns.rand.domain', ['token' => $request->token, 'download' => true, 'ip' => $server->ip]) . '\\" > /etc/bind/' . env('RAND_DOMAIN') . '.zone" >> /scripts/bind9-config-updare.sh',
             'echo "sleep 1" >> /scripts/bind9-config-updare.sh',
             'echo "service bind9 restart" >> /scripts/bind9-config-updare.sh',
 
         ];
-        $bash = implode(PHP_EOL,$bash);
+        $bash = implode(PHP_EOL, $bash);
 
-        if($request->download){
+        if ($request->download) {
             return response()->make($bash, 200)->header('Content-Type', 'text/plain')->header('Content-Disposition', 'attachment; filename="bind.sh"');
-        }else{
+        } else {
             return response()->make($bash, 200)->header('Content-Type', 'text/plain');
         }
     }
@@ -98,17 +124,17 @@ class ServerController extends Controller
     public function bash(Server $server, Request $request)
     {
         $bash = [
-            '#!/bin/bash' ,
+            '#!/bin/bash',
             'mkdir -p /ssl',
-            'curl "'.route('api.server.cert.key', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" > /ssl/cert.key',
-            'curl "'.route('api.server.cert', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" > /ssl/cert.pem',
+            'curl "' . route('api.server.cert.key', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" > /ssl/cert.key',
+            'curl "' . route('api.server.cert', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" > /ssl/cert.pem',
             'chmod -R 777 /ssl',
             'echo -n "Server or Access? [s/a]:"',
             'read mode',
             'if [ "$mode" = "s" ]; then',
-            'curl "'.route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" >  /usr/local/etc/xray/config.json',
+            'curl "' . route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" >  /usr/local/etc/xray/config.json',
             'elif [ "$mode" = "a" ]; then',
-            'curl "'.route('api.server.xray.config.access', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'" >  /usr/local/etc/xray/config.json',
+            'curl "' . route('api.server.xray.config.access', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" >  /usr/local/etc/xray/config.json',
             'fi',
             'sleep 1',
             'service xray restart',
@@ -118,7 +144,7 @@ class ServerController extends Controller
             //save script
             'mkdir -p /scripts',
             'echo "#!/bin/bash" > /scripts/xray-config-updare.sh',
-            'echo "curl \\"'.route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token,'download'=>true]).'\\" >  /usr/local/etc/xray/config.json" >> /scripts/xray-config-updare.sh',
+            'echo "curl \\"' . route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '\\" >  /usr/local/etc/xray/config.json" >> /scripts/xray-config-updare.sh',
             'echo "sleep 1" >> /scripts/xray-config-updare.sh',
             'echo "service xray restart" >> /scripts/xray-config-updare.sh',
             'chmod +x /scripts/xray-config-updare.sh',
@@ -128,11 +154,11 @@ class ServerController extends Controller
         //is server or access
 
         //bash to file
-        $bash = implode(PHP_EOL,$bash);
+        $bash = implode(PHP_EOL, $bash);
 
-        if($request->download){
+        if ($request->download) {
             return response()->make($bash, 200)->header('Content-Type', 'text/plain')->header('Content-Disposition', 'attachment; filename="install.sh"');
-        }else{
+        } else {
             return response()->make($bash, 200)->header('Content-Type', 'text/plain');
         }
     }
@@ -179,7 +205,7 @@ class ServerController extends Controller
             'location' => $request->get('location'),
             'country' => $request->get('country'),
             'status' => "UP",
-            'domain' => Str::random(12) . ".".env('RAND_DOMAIN'),
+            'domain' => Str::random(12) . "." . env('RAND_DOMAIN'),
             'token' => Str::random(32),
         ]);
 

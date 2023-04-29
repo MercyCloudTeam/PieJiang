@@ -27,8 +27,10 @@ Route::any('/telegram/bot',[TelegramController::class,'botWebhook'])->name('tele
 Route::get('/dns/rand/domain',[DNSController::class,'randDomain'])->name('api.dns.rand.domain');
 
 Route::prefix('/proxy')->middleware(['verify.user.token'])->group(function () {
-    Route::get('/clash', [ProxyController::class, 'clashConfig'])->name('api.proxy.clash.config');
-    Route::get('/shadowrocket', [ProxyController::class, 'shadowrocketConfig'])->name('api.proxy.shadowrocket.config');
+    Route::get('/clash', [\App\Http\Controllers\Software\ClashController::class, 'clashConfig'])->name('api.proxy.clash.config');
+    Route::get('/shadowrocket', [\App\Http\Controllers\Software\ShadowrocketController::class, 'shadowrocketConfig'])->name('api.proxy.shadowrocket.config');
+
+    Route::post('/{proxy}/port', [ProxyController::class, 'portUpdate'])->name('api.proxy.port.update');
 });
 
 Route::prefix('/user')->middleware(['verify.user.token'])->group(function () {
@@ -36,12 +38,13 @@ Route::prefix('/user')->middleware(['verify.user.token'])->group(function () {
 });
 
 Route::prefix('/server')->middleware(['verify.server.token'])->group(function () {
-    Route::get('/{server}/xray-server', [ProxyController::class, 'generateXrayServerConfig'])->name('api.server.xray.config');
-    Route::get('/{server}/xray-access', [ProxyController::class, 'generateXrayAccessConfig'])->name('api.server.xray.config.access');
+    Route::get('/{server}/xray-server', [\App\Http\Controllers\Software\XrayController::class, 'generateXrayServerConfig'])->name('api.server.xray.config');
+    Route::get('/{server}/xray-access', [\App\Http\Controllers\Software\XrayController::class, 'generateXrayAccessConfig'])->name('api.server.xray.config.access');
     Route::get('/{server}/bash',[ServerController::class,'bash'])->name('api.server.bash');
     Route::get('/{server}/bash/bind',[ServerController::class,'bindBash'])->name('api.server.bash.bind');
     Route::get('/{server}/cert',[ServerController::class,'cert'])->name('api.server.cert');
     Route::get('/{server}/cert/key',[ServerController::class,'certKey'])->name('api.server.cert.key');
     Route::delete('/{server}/cert',[ServerController::class,'destroyCert'])->name('api.server.cert.destroy');
+
 });
 Route::get('/server/register',[ServerController::class,'register'])->name('api.server.register');
