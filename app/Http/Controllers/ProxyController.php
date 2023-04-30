@@ -30,6 +30,12 @@ class ProxyController extends Controller
         'ss2022'
     ];
 
+    public function destroyAccess(Access $access)
+    {
+        $access->delete();
+        return Redirect::route('access.index');
+    }
+
 
     public function portUpdate(Proxy $proxy, Request $request)
     {
@@ -73,13 +79,18 @@ class ProxyController extends Controller
     public function storeAccess(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required|string',
+            'name' => 'nullable|string',
             'proxy_id' => 'required|exists:proxies,id',
             'server_id' => 'required|exists:servers,id',
             'port' => 'required|integer|min:1|max:65535',
             'type' => 'required|in:' . implode(',', $this->types),
         ]);
 
+        $server = Server::find($request->server_id);
+        $proxy = Proxy::find($request->proxy_id);
+        if (empty($request->name)) {
+            $request->name = "[{$server->country}->{$proxy->server->country}] {$server->name}->{$proxy->server->name}";
+        }
         $config = [];
         switch ($request->type) {
             case 'trojan':

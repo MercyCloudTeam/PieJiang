@@ -6,12 +6,22 @@ use App\Models\Access;
 use App\Models\Proxy;
 use App\Models\Server;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ServerController extends Controller
 {
+
+    public function statusUpdate(Request $request, Server $server)
+    {
+//        $server->update([
+//            'status' => $request->status,
+//        ]);
+//        return redirect()->route('servers.index');
+        Log::info('statusUpdate', [$request->all()]);
+    }
 
     public function update(Request $request, Server $server)
     {

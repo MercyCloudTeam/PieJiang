@@ -48,3 +48,4 @@ Route::prefix('/server')->middleware(['verify.server.token'])->group(function ()
 
 });
 Route::get('/server/register',[ServerController::class,'register'])->name('api.server.register');
+Route::post('/server/status',[ServerController::class,'statusUpdate'])->name('api.server.update.status');

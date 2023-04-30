@@ -4,12 +4,19 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import {Link, useForm, usePage} from '@inertiajs/vue3';
 import {ref} from "vue";
+import DangerButton from "@/Components/DangerButton.vue";
 
 
 const props = defineProps({
     accesses: Array,
 });
 const user = usePage().props.auth.user;
+
+const delAccessForm = useForm({
+});
+const delAccess = (id) => {
+    delAccessForm.delete(route('access.destroy', id));
+}
 
 </script>
 
@@ -41,6 +48,10 @@ const user = usePage().props.auth.user;
                     <td>{{item.proxy.name}}</td>
                     <td>{{item.type}}</td>
                     <td>
+                        <div class="flex justify-center space-x-1">
+                            <PrimaryButton  class="mr-2 ml-2" >Edit</PrimaryButton>
+                            <DangerButton class="mr-2 ml-2" @click="delAccess(item.id)" >Delete</DangerButton>
+                        </div>
                     </td>
                 </tr>
                 </tbody>
