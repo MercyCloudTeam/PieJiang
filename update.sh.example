@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# 指定项目路径
+PROJECT_PATH="/path/to/project"
+
+# 拉取代码
+echo "拉取代码..."
+cd $PROJECT_PATH
+git fetch --all
+git reset --hard origin/main
+
+# 更新Composer依赖
+echo "更新Composer依赖..."
+composer install --no-dev --optimize-autoloader
+
+# 更新NPM依赖
+echo "更新NPM依赖..."
+npm install
+npm run build
+
+# 清除缓存
+echo "清除缓存..."
+php artisan cache:clear
+php artisan config:cache
+php artisan route:cache
+
+# 分配文件目录权限
+echo "分配文件目录权限..."
+chown -R www:www $PROJECT_PATH/storage
+chmod -R 775 $PROJECT_PATH/storage
+chown -R www:www $PROJECT_PATH/bootstrap/cache
+chmod -R 775 $PROJECT_PATH/bootstrap/cache
+
+# 重启Web服务器
+echo "重启Web服务器..."
+service nginx restart
