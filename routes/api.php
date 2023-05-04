@@ -34,7 +34,7 @@ Route::prefix('/proxy')->middleware(['verify.user.token'])->group(function () {
 });
 
 Route::prefix('/user')->middleware(['verify.user.token'])->group(function () {
-    Route::get('/register/server',[ServerController::class,'registerUrl'])->name('api.user.server.register.url');
+    Route::get('/register/server',[ServerController::class,'Url'])->name('api.user.server.register.url');
 });
 
 Route::prefix('/server')->middleware(['verify.server.token'])->group(function () {

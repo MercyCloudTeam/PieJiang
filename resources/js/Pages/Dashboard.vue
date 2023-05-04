@@ -29,7 +29,7 @@ defineProps({
 <!--                        <p>User Token: <span class="kbd" @click="copyText(user.token)">{{user.token}}</span></p>-->
 <!--                        <p>Clash URL: <span class="kbd" @click="copyText(route('api.proxy.clash.config') + '?token=' + user.token + '&download=1')">{{route('api.proxy.clash.config')}}{{"?token="+ user.token}}</span> <br></p>-->
                         <p>User Token:  <ClipboardSpan :text="user.token" classes="kbd mt-2" /> </p>
-                        <p>Clash URL: <ClipboardSpan :text="route('api.proxy.clash.config') + '?token=' + user.token + '&download=1'" classes="kbd mt-2" /> </p>
+                        <p>Clash URL: <ClipboardSpan :text="route('api.proxy.clash.config') + '?token=' + user.token + '&download=1filter=ss'" classes="kbd mt-2" /> </p>
                         <p>Shadowrocket URL: <ClipboardSpan :text="route('api.proxy.shadowrocket.config') + '?token=' + user.token + '&download=1'" classes="kbd mt-2" /> </p>
                         <p>CA Crt: <a :href="route('ca')">Download</a></p>
                     </div>

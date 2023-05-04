@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 class ClashController extends Controller
 {
 
-    public  function processProxiesList($list)
+    public function processProxiesList($list)
     {
         $result = [];
         foreach ($list as $proxy) {
@@ -56,7 +56,7 @@ class ClashController extends Controller
                     if ($proxy->config['method'] == '2022-blake3-aes-128-gcm') {
                         break;
                     }
-                    if($proxy->config['method'] == 'chacha20-poly1305'){
+                    if ($proxy->config['method'] == 'chacha20-poly1305') {
                         $method = 'chacha20-ietf-poly1305';
                     }
                     $result[] = [
@@ -93,7 +93,7 @@ class ClashController extends Controller
             }
 
         }
-       return $result;
+        return $result;
     }
 
     public function getProxies()
@@ -112,16 +112,30 @@ class ClashController extends Controller
 
     public function clashConfig(Request $request)
     {
+
         $general = Yaml::parseFile(storage_path('app/GeneralClashConfig.yml'));
         //generate rules
         $groups = ProxyGroup::all()->load('rules');
 //        $proxiesNameList = Proxy::all()->pluck('display_name')->toArray();
         $proxies = $this->getProxies();
 
+
 //        dd($proxies);
-        foreach ($proxies as $proxy) {
-            $proxiesNameList[] = $proxy['name'];
+        foreach ($proxies as $k => $proxy) {
+            //filter proxies
+            if ($request->filter != ''){
+                $filterList = explode(',', $request->filter);
+                foreach ($filterList as $filterType){
+                    if ($proxy['type'] == $filterType){
+                        unset($proxies[$k]);
+                    }
+                }
+            }
+            if (!empty($proxies[$k])){
+                $proxiesNameList[] = $proxy['name'];
+            }
         }
+        $proxies = array_values($proxies);
         $user = User::where('token', $request->token)->first();
         $buildTimeName = "BuildTime: " . date('Ymd H:i:s');
         $userInfoName = "User: $user->name";
@@ -144,7 +158,7 @@ class ClashController extends Controller
 
         $general['proxies'] = $proxies;
 
-        $proxiesNameList = array_merge(['DIRECT', 'REJECT'],$proxiesNameList);
+        $proxiesNameList = array_merge(['DIRECT', 'REJECT'], $proxiesNameList);
         $rules = [];
         $proxyGroups = [];
         $proxyGroups[] = [

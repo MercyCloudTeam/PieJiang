@@ -198,6 +198,7 @@ class XrayController extends Controller
     public function generateXrayAccessConfig(Server $server)
     {
         $access = Access::where('server_id', $server->id)->get();
+        $proxies = Proxy::where('server_id', $server->id)->get();
         $base = $this->xrayBase();
         $base['outbounds'] = [
             [
@@ -224,6 +225,11 @@ class XrayController extends Controller
         ];
 
         $base['inbounds'] = [];
+
+        foreach ($proxies as $item){
+            $base['inbounds'][] = $this->makeXrayInboundConfig($item);
+        }
+
         foreach ($access as $item) {
             $proxy = $item->proxy;
             // dd( $this->makeXrayOutboundConfig($proxy) );
@@ -297,7 +303,7 @@ class XrayController extends Controller
                     'settings' => [
                         'method' => $proxy->config['method'],
                         'password' => $proxy->config['password'],
-                        'udp' => $proxy->config['udp']
+                        'udp' => $proxy->config['udp'] ?? false,
                     ],
                     'sniffing' => [
                         'enabled' => true,
@@ -329,6 +335,25 @@ class XrayController extends Controller
                 $result = array_merge($temp, $result);
                 break;
 
+            case 'socks5':
+                $result = [
+                    //socks5
+                    'port' => $proxy->port,
+                    'listen' => $proxy->config['listen'] ?? '0.0.0.0',
+                    'tag' => $nameTag,
+                    'protocol' => 'socks',
+                    'settings' => [
+                        'auth' => $proxy->config['auth'] ?? 'noauth',
+                        'accounts' => [
+                            [
+                                'user' => $proxy->config['username'] ?? '',
+                                'pass' => $proxy->config['password'] ?? '',
+                            ]
+                        ],
+                        'udp' => $proxy->config['udp'] ?? false,
+                    ],
+                ];
+                break;
             case 'vless':
                 $result = [
                     //VLESS
@@ -486,6 +511,7 @@ class XrayController extends Controller
                                     [
                                         'id' => $proxy->config['uuid'],
                                         'security' => 'none',
+                                        'encryption' => 'none',
                                         'flow'=>$proxy->config['flow'] ?? '',
                                     ]
                                 ]
@@ -500,9 +526,9 @@ class XrayController extends Controller
                         'realitySettings' => [
                             'show' => false,
                             'fingerprint' => "chrome",
-                            'serverNames' => $proxy->config['serverName'][0],
+                            'serverName' => $proxy->config['serverName'][0],
                             'publicKey' => $proxy->config['pubKey'],
-                            "shortIds" => "",
+                            "shortId" => "",
                             'spiderX'=>$proxy->config['spiderX'] ?? "",
                         ],
                         'grpcSettings' => [

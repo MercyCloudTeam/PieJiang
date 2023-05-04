@@ -60,7 +60,6 @@ class ShadowrocketController extends Controller
         //remove empty lines
         $result = array_filter($result);
 
-        dd($result);
         $resp = implode("\n", $result);
         $resp = base64_encode($resp);
         if ($request->download) {

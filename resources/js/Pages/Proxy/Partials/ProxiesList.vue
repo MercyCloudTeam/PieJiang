@@ -27,6 +27,7 @@ const updateProxyForm = useForm({
     name: '',
     type: '',
     domain: '',
+    port: '',
     config: '',
 });
 
@@ -41,6 +42,7 @@ const openUpdateProxyModal = (proxy) => {
     updateProxyForm.name = proxy.name;
     updateProxyForm.type = proxy.type;
     updateProxyForm.domain = proxy.domain;
+    updateProxyForm.port = proxy.port;
     updateProxyForm.id = proxy.id;
     updateProxyForm.config = JSON.stringify(proxy.config, null, 4);
     openUpdateModal.value = true;
@@ -169,7 +171,17 @@ const updateProxy = () => {
                     <InputError :message="updateProxyForm.errors.type" />
                 </div>
 
-
+                <div class="mt-4">
+                    <InputLabel for="port" value="Port" />
+                    <TextInput
+                        id="name"
+                        type="text"
+                        class="mt-1 block w-full"
+                        v-model="updateProxyForm.port"
+                        :class="{ 'border-red-300': updateProxyForm.errors.port }"
+                    />
+                    <InputError :message="updateProxyForm.errors.port" />
+                </div>
                 <div class="mt-4">
                     <InputLabel for="domain" value="Domain" />
                     <TextInput

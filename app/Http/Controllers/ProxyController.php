@@ -56,11 +56,13 @@ class ProxyController extends Controller
             'name' => 'required|string',
             'type' => 'required|in:' . implode(',', $this->types),
             'config' => 'required|json',
+            'port' => 'required|integer|min:1|max:65535',
             'domain' => 'nullable|string',
         ]);
         $proxy->update([
             'name' => $request->name,
             'type' => $request->type,
+            'port' => $request->port,
             'domain' => $request->domain,
             'config' => json_decode($request->config, true),
         ]);

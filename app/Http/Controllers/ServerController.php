@@ -133,38 +133,11 @@ class ServerController extends Controller
 
     public function bash(Server $server, Request $request)
     {
-        $bash = [
-            '#!/bin/bash',
-            'mkdir -p /ssl',
-            'curl "' . route('api.server.cert.key', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" > /ssl/cert.key',
-            'curl "' . route('api.server.cert', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" > /ssl/cert.pem',
-            'chmod -R 777 /ssl',
-            'echo -n "Server or Access? [s/a]:"',
-            'read mode',
-            'if [ "$mode" = "s" ]; then',
-            'curl "' . route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" >  /usr/local/etc/xray/config.json',
-            'elif [ "$mode" = "a" ]; then',
-            'curl "' . route('api.server.xray.config.access', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '" >  /usr/local/etc/xray/config.json',
-            'fi',
-            'sleep 1',
-            'service xray restart',
-            'sleep 5',
-            'service xray status',
-
-            //save script
-            'mkdir -p /scripts',
-            'echo "#!/bin/bash" > /scripts/xray-config-updare.sh',
-            'echo "curl \\"' . route('api.server.xray.config', ['server' => $server->id, 'token' => $server->token, 'download' => true]) . '\\" >  /usr/local/etc/xray/config.json" >> /scripts/xray-config-updare.sh',
-            'echo "sleep 1" >> /scripts/xray-config-updare.sh',
-            'echo "service xray restart" >> /scripts/xray-config-updare.sh',
-            'chmod +x /scripts/xray-config-updare.sh',
-
-            'echo "Done! PieJiang Love You!"'
-        ];
-        //is server or access
-
+        $bash = view('config.initial-bash',[
+            'server' => $server,
+        ])->__toString();
         //bash to file
-        $bash = implode(PHP_EOL, $bash);
+//        $bash = implode(PHP_EOL, $bash);
 
         if ($request->download) {
             return response()->make($bash, 200)->header('Content-Type', 'text/plain')->header('Content-Disposition', 'attachment; filename="install.sh"');
@@ -239,7 +212,7 @@ class ServerController extends Controller
             'name' => 'nullable|string',
             'location' => 'nullable|string',
             'country' => 'nullable|string',
-            'plain' => 'boolean|nullable',
+            'plain' => 'boolean|nullable',register
         ]);
         return response()->json([
             'message' => 'Server register url',
