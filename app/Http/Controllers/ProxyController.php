@@ -89,7 +89,7 @@ class ProxyController extends Controller
         $server = Server::find($request->server_id);
         $proxy = Proxy::find($request->proxy_id);
         if (empty($request->name)) {
-            $request->name = "[{$server->country}->{$proxy->server->country}] {$server->name}->{$proxy->server->name}";
+            $request->name = "[{$server->country}->{$proxy->server->country}]{$server->name}->{$proxy->server->name}";
         }
         $config = [];
         switch ($request->type) {

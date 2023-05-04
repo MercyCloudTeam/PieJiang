@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Software;
 
 use App\Http\Controllers\Controller;
+use App\Models\Access;
 use App\Models\Proxy;
 use App\Models\ProxyGroup;
 use App\Models\User;
@@ -12,11 +13,10 @@ use Symfony\Component\Yaml\Yaml;
 class ClashController extends Controller
 {
 
-    public function getProxies()
+    public  function processProxiesList($list)
     {
         $result = [];
-        $proxies = Proxy::all();
-        foreach ($proxies as $proxy) {
+        foreach ($list as $proxy) {
             switch ($proxy->type) {
                 case 'trojan':
                     $result[] = [
@@ -91,8 +91,23 @@ class ClashController extends Controller
                     $result[] = $temp;
                     break;
             }
+
         }
-        return $result;
+       return $result;
+    }
+
+    public function getProxies()
+    {
+        $result = [];
+        $proxies = Proxy::all();
+        //get access
+        $access = Access::all();
+
+        $proxiesList = $this->processProxiesList($proxies);
+        $accessList = $this->processProxiesList($access);
+//        dd($accessList);
+
+        return array_merge($proxiesList, $accessList);
     }
 
     public function clashConfig(Request $request)

@@ -33,7 +33,14 @@ class Proxy extends Model
     public function displayName() : Attribute
     {
         return Attribute::make(
-            get: fn() => $this->name."-Direct(".$this->type.")",
+            get: fn() => trim($this->name."-Direct(".$this->type.")"),
+        );
+    }
+
+    public function domain() : Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->domain ?? $this->server->domain,
         );
     }
 }

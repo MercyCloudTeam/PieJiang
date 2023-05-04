@@ -11,11 +11,12 @@ git reset --hard origin/main
 
 # 更新Composer依赖
 echo "更新Composer依赖..."
-composer install --no-dev --optimize-autoloader
+composer install --no-dev --optimize-autoloader --no-interaction
 
 # 更新NPM依赖
 echo "更新NPM依赖..."
 npm install
+rm -rf public/js/*
 npm run build
 
 # 清除缓存
@@ -26,10 +27,12 @@ php artisan route:cache
 
 # 分配文件目录权限
 echo "分配文件目录权限..."
-chown -R www:www $PROJECT_PATH/storage
-chmod -R 775 $PROJECT_PATH/storage
-chown -R www:www $PROJECT_PATH/bootstrap/cache
-chmod -R 775 $PROJECT_PATH/bootstrap/cache
+chown -R www:www $PROJECT_PATH
+chmod -R 755 $PROJECT_PATH
+chmod -R 777 $PROJECT_PATH/storage
+chmod -R 777 $PROJECT_PATH/bootstrap/cache
+chmod -R 777 $PROJECT_PATH/public
+
 
 # 重启Web服务器
 echo "重启Web服务器..."
