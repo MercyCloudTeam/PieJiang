@@ -192,6 +192,13 @@ class ServerController extends Controller
             'token' => Str::random(32),
         ]);
 
+        $proxyController = new ProxyController();
+        $proxyController->initialProxy($server,'trojan');
+        $proxyController->initialProxy($server,'ss');
+        $proxyController->initialProxy($server,'ss2022');
+        $proxyController->initialProxy($server,'vmess');
+        $proxyController->initialProxy($server,'vless');
+
         if ($request->get('plain')) {
             return response()->make(
                 "Server Token:" . $server->token . PHP_EOL .
@@ -212,8 +219,9 @@ class ServerController extends Controller
             'name' => 'nullable|string',
             'location' => 'nullable|string',
             'country' => 'nullable|string',
-            'plain' => 'boolean|nullable',register
+            'plain' => 'boolean|nullable',
         ]);
+
         return response()->json([
             'message' => 'Server register url',
             'data' => [

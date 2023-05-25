@@ -16,25 +16,32 @@ class ShadowrocketController extends Controller
         $result = '';
         $name = urlencode($proxy->display_name);
         switch ($proxy->type) {
-//            case 'ss':
-//                $url = "{$proxy->config['method']}:{$proxy->config['password']}@{$proxy->ip}:{$proxy->port}";
-//                $result = "ss://".base64_encode($url);
-//                break;
+            case 'ss':
+                $url = "{$proxy->config['method']}:{$proxy->config['password']}@{$proxy->server->ip}:{$proxy->port}";
+                $result = "ss://".base64_encode($url);
+                $result .= '#'.$name;
+                break;
             case 'vmess':
-                $url = "{$proxy->config['uuid']}@{$proxy->ip}:{$proxy->port}";
-                $temp = "vmess://" . base64_encode($url) . "?remarks={$name}&alterId={$proxy->config['alterId']}";
+                $url = "auto:{$proxy->config['uuid']}@{$proxy->server->ip}:{$proxy->port}";
+                $temp = "vmess://" . base64_encode($url) . "?alterId={$proxy->config['alterId']}";
+//                obfsParam=hahs.due&path=/&obfs=websocket&alterId=0
+//                &path=/&obfs=websocket&alterId=0
                 if ($proxy->config['network'] == 'ws') {
-                    $temp .= "&obfs=websocket&obfsParam={$proxy->domain}";
+                    $temp .= "&obfsParam={$proxy->domain}&path=/&obfs=websocket";
                 }
                 $result = $temp;
+                $result .= '#'.$name;
                 break;
-//            case 'trojan':
-//                $url = "{$proxy->config['password']}@{$proxy->ip}:{$proxy->port}";
-//                $temp = "trojan://" . base64_encode($url) . "?remarks={$name}";
-//                if ($proxy->config['network'] == 'ws') {
-//                    $temp .= "&obfs=websocket&obfsParam={$proxy->domain}";
-//                }
-//                $result = $temp;
+            case 'trojan':
+//                ?allowInsecure=1&plugin=obfs-local;obfs=websocket;obfs-host=domain.q;obfs-uri=/tls
+                $url = "{$proxy->config['password']}@{$proxy->server->ip}:{$proxy->port}?peer={$proxy->domain}";
+                $temp = "trojan://" . $url ;
+//                $temp = "trojan://" . base64_encode($url) ;
+                if (!empty($proxy->config['network']) && $proxy->config['network'] == 'ws') {
+                    $temp .= "?obfs=websocket&obfsParam={$proxy->domain}";
+                }
+                $result = $temp;
+                $result .= '#'.$name;
         }
 
         return $result;

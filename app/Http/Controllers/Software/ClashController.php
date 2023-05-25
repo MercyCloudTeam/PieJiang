@@ -41,7 +41,7 @@ class ClashController extends Controller
                         'tls' => $proxy->config['tls'],
                     ];
                     break;
-                case 'sock5':
+                case 'socks5':
                     $result[] = [
                         'name' => $proxy->display_name,
                         'type' => 'socks5',

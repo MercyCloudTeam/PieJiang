@@ -35,6 +35,7 @@ const delAccess = (id) => {
                     <th>Port</th>
                     <th>Server[IN]</th>
                     <th>Proxy[OUT]</th>
+                    <th>Proxy[Type]</th>
                     <th>Type</th>
                     <th>Action</th>
                 </tr>
@@ -46,6 +47,7 @@ const delAccess = (id) => {
                     <td>{{item.port}}</td>
                     <td>{{item.server.name}}</td>
                     <td>{{item.proxy.name}}</td>
+                    <td>{{item.proxy.type}}</td>
                     <td>{{item.type}}</td>
                     <td>
                         <div class="flex justify-center space-x-1">

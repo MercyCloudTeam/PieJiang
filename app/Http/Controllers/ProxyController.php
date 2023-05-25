@@ -78,23 +78,115 @@ class ProxyController extends Controller
         return Redirect::route('proxies.index');
     }
 
-    public function storeAccess(Request $request)
+    public function initialProxy(Server $server,string $type)
     {
-        $this->validate($request, [
-            'name' => 'nullable|string',
-            'proxy_id' => 'required|exists:proxies,id',
-            'server_id' => 'required|exists:servers,id',
-            'port' => 'required|integer|min:1|max:65535',
-            'type' => 'required|in:' . implode(',', $this->types),
-        ]);
+        switch ($type) {
+            case 'trojan':
+                $name = "[$server->country]" . $server->name;
+                return Proxy::create([
+                    'name' => $name,
+                    'listen' => $server->ip,
+                    'type' => 'trojan',
+                    'port' => 3000,
+                    'server_id' => $server->id,
+                    'config' => [
+                        'password' => Str::random(16),
+                        'email' => "$server->id@proxy.piejiang.com",
+                        'certificates' => [
+                            [
+                                'certificateFile' => '/ssl/cert.pem',
+                                'keyFile' => '/ssl/cert.key',
 
-        $server = Server::find($request->server_id);
-        $proxy = Proxy::find($request->proxy_id);
-        if (empty($request->name)) {
-            $request->name = "[{$server->country}->{$proxy->server->country}]{$server->name}->{$proxy->server->name}";
+                            ]
+                        ],
+                        'listen' => $server->ip,
+                    ]
+                ]);
+            case 'ss':
+                $name = "[$server->country]" . $server->name;
+                return Proxy::create([
+                    'name' => $name,
+                    'type' => 'ss',
+                    'port' => mt_rand(10000, 65535),
+                    'server_id' => $server->id,
+                    'config' => [
+                        'password' => Str::random(16),
+                        'method' => 'chacha20-poly1305',
+                        'udp' => true,
+                        'listen' => $server->ip,
+                    ]
+                ]);
+            case 'ss2022':
+                $name = "[$server->country]" . $server->name;
+                // openssl rand -base64 16
+                return Proxy::create([
+                    'name' => $name,
+                    'type' => 'ss2022',
+                    'port' => mt_rand(10000, 65535),
+                    'server_id' => $server->id,
+                    'config' => [
+                        'password' => base64_encode(Str::random(16)),
+                        'method' => '2022-blake3-aes-128-gcm',
+                        'udp' => true,
+                        'listen' => $server->ip,
+                    ]
+                ]);
+            case 'vmess':
+                $name = "[$server->country]" . $server->name;
+                return Proxy::create([
+                    'name' => $name,
+                    'listen' => $server->ip,
+                    'type' => 'vmess',
+                    'port' => mt_rand(10000, 65535),
+                    'server_id' => $server->id,
+                    'config' => [
+                        'uuid' => Str::uuid(),
+                        'alterId' => 0,
+                        'listen' => $server->ip,
+                        'network' => 'ws',
+
+                    ]
+                ]);
+            case 'vless':
+                $name = "[$server->country]" . $server->name;
+                //x25519 Private key
+                $ed25519 = sodium_crypto_sign_keypair();
+                $ed25519PrivKey = sodium_crypto_sign_secretkey($ed25519);
+                $ed25519PubKey = sodium_crypto_sign_publickey($ed25519);
+                $curve25519PrivKey = sodium_crypto_sign_ed25519_sk_to_curve25519($ed25519PrivKey);
+                $curve25519PubKey = sodium_crypto_sign_ed25519_pk_to_curve25519($ed25519PubKey);
+                // RFC 4648
+                $privateKey = rtrim(strtr(base64_encode($curve25519PrivKey), '+/', '-_'), '=');
+                $pubKey = rtrim(strtr(base64_encode($curve25519PubKey), '+/', '-_'), '=');
+                return Proxy::create([
+                    'name' => $name,
+                    'type' => 'vless',
+                    'port' => 443,
+                    'server_id' => $server->id,
+                    'listen' => $server->ip,
+                    'config' => [
+                        'uuid' => Str::uuid(),
+                        //x25519 key
+                        'privateKey' => $privateKey,
+                        'pubKey' => $pubKey,
+                        'security' => 'reality',
+
+                        'spiderX' => '/',
+                        'serverName' => ['www.lovelive-anime.jp', 'lovelive-anime.jp'],
+
+                        'listen' => $server->ip,
+                    ]
+                ]);
+            default:
+                return false;
         }
+    }
+
+    public function initialProxyConfig($type)
+    {
         $config = [];
-        switch ($request->type) {
+
+        switch ($type) {
             case 'trojan':
                 $config = [
                     'password' => Str::random(16),
@@ -129,8 +221,27 @@ class ProxyController extends Controller
                     'password' => Str::random(16),
                 ];
                 break;
-
         }
+        return $config;
+    }
+
+    public function storeAccess(Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'nullable|string',
+            'proxy_id' => 'required|exists:proxies,id',
+            'server_id' => 'required|exists:servers,id',
+            'port' => 'required|integer|min:1|max:65535',
+            'type' => 'required|in:' . implode(',', $this->types),
+        ]);
+
+        $server = Server::find($request->server_id);
+        $proxy = Proxy::find($request->proxy_id);
+        if (empty($request->name)) {
+            $request->name = "[{$server->country}->{$proxy->server->country}]{$server->name}->{$proxy->server->name}";
+        }
+
+        $config = $this->initialProxyConfig($request->type);
 
         Access::updateOrCreate([
             'proxy_id' => $request->proxy_id,
@@ -143,6 +254,35 @@ class ProxyController extends Controller
         ]);
 
         return Redirect::route('access.index');
+    }
+
+    public function store(Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'nullable|string',
+            'port' => 'required|integer|min:1|max:65535',
+            'type' => 'required|in:' . implode(',', $this->types),
+        ]);
+
+        $server = Server::find($request->server_id);
+        $proxy = Proxy::find($request->proxy_id);
+        if (empty($request->name)) {
+            $request->name = "[{$server->country}]{$proxy->server->name}";
+        }
+
+        $config = $this->initialProxyConfig($request->type);
+
+        Proxy::updateOrCreate([
+            'proxy_id' => $request->proxy_id,
+            'server_id' => $request->server_id,
+            'type' => $request->type,
+        ], [
+            'name' => $request->name,
+            'port' => $request->port,
+            'config' => $config,
+        ]);
+
+        return Redirect::route('proxy.index');
     }
 
     public function index()

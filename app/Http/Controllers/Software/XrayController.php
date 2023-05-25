@@ -53,143 +53,45 @@ class XrayController extends Controller
                 'tag' => 'block',
             ],
         ];
-        $ss = Proxy::where([
-            ['server_id', '=', $server->id],
-            ['type', '=', 'ss'],
-        ])->first();
-        $ss2022 = Proxy::where([
-            ['server_id', '=', $server->id],
-            ['type', '=', 'ss2022'],
-        ])->first();
-        $vless = Proxy::where([
-            ['server_id', '=', $server->id],
-            ['type', '=', 'vless'],
-        ])->first();
-        $vmess = Proxy::where([
-            ['server_id', '=', $server->id],
-            ['type', '=', 'vmess'],
-        ])->first();
-        $trojan = Proxy::where([
-            ['server_id', '=', $server->id],
-            ['type', '=', 'trojan'],
-        ])->first();
 
-        if (empty($ss)) {
-            $name = "[$server->country]" . $server->name;
-            // openssl rand -base64 16
-            $ss = Proxy::create([
-                'name' => $name,
-                'type' => 'ss',
-                'port' => mt_rand(10000, 65535),
-                'server_id' => $server->id,
-                'config' => [
-                    'password' => Str::random(16),
-                    'method' => 'chacha20-poly1305',
-                    'udp' => true,
-                    'listen' => $server->ip,
-                ]
-            ]);
+        $proxiesType = [
+            'ss', 'ss2022', 'vless', 'vmess', 'trojan'
+        ];
+        $proxies = Proxy::where('server_id', $server->id)->get();
+        foreach ($proxies as $item) {
+            if (!in_array($item->type, $proxiesType)) {
+                continue;
+            }
+            $base['inbounds'][] = $this->makeXrayInboundConfig($item);
         }
-        $base['inbounds'][] = $this->makeXrayInboundConfig($ss);
 
-        if (empty($ss2022)) {
-            $name = "[$server->country]" . $server->name;
-            // openssl rand -base64 16
-            $ss2022 = Proxy::create([
-                'name' => $name,
-                'type' => 'ss2022',
-                'port' => mt_rand(10000, 65535),
-                'server_id' => $server->id,
-                'config' => [
-                    'password' => base64_encode(Str::random(16)),
-                    'method' => '2022-blake3-aes-128-gcm',
-                    'udp' => true,
-                    'listen' => $server->ip,
-                ]
-            ]);
-        }
-        $base['inbounds'][] = $this->makeXrayInboundConfig($ss2022);
-
-        if (empty($trojan)) {
-            $name = "[$server->country]" . $server->name;
-            $trojan = Proxy::create([
-                'name' => $name,
-                'listen' => $server->ip,
-                'type' => 'trojan',
-                'port' => 3000,
-                'server_id' => $server->id,
-                'config' => [
-                    'password' => Str::random(16),
-                    'email' => "$server->id@proxy.piejiang.com",
-                    'certificates' => [
+        if (!empty($server->config['cloudflare-warp']) && $server->config['cloudflare-warp']) {
+            $base['outbounds'][] = [
+                'tag' => 'cloudflare-warp-socks',
+                'protocol' => 'socks',
+                'settings' => [
+                    'servers' => [
                         [
-                            'certificateFile' => '/ssl/cert.pem',
-                            'keyFile' => '/ssl/cert.key',
-
+                            'address' => '127.0.0.1',
+                            'port' => 40000,
                         ]
-                    ],
-                    'listen' => $server->ip,
+                    ]
                 ]
-            ]);
+            ];
+
+            $inboundTags = [];
+            foreach ($proxies as $item) {
+                if (!in_array($item->type, $proxiesType)) {
+                    continue;
+                }
+                $inboundTags[] = trim($item->name . '-' . $item->type . '-' . 'inbound');
+            }
+            $base['routing']['rules'][] = [
+                'type' => 'field',
+                'inboundTag' => $inboundTags,
+                'outboundTag' => 'cloudflare-warp-socks',
+            ];
         }
-        $base['inbounds'][] = $this->makeXrayInboundConfig($trojan);
-
-        if (empty($vmess)) {
-            $name = "[$server->country]" . $server->name;
-            $vmess = Proxy::create([
-                'name' => $name,
-                'listen' => $server->ip,
-                'type' => 'vmess',
-                'port' => mt_rand(10000, 65535),
-                'server_id' => $server->id,
-                'config' => [
-                    'uuid' => Str::uuid(),
-                    'alterId' => 0,
-                    'listen' => $server->ip,
-                    'network' => 'ws',
-
-                ]
-            ]);
-        }
-        $base['inbounds'][] = $this->makeXrayInboundConfig($vmess);
-
-        if (empty($vless)) {
-            $name = "[$server->country]" . $server->name;
-            //x25519 Private key
-            $ed25519 = sodium_crypto_sign_keypair();
-            $ed25519PrivKey = sodium_crypto_sign_secretkey($ed25519);
-            $ed25519PubKey = sodium_crypto_sign_publickey($ed25519);
-            $curve25519PrivKey = sodium_crypto_sign_ed25519_sk_to_curve25519($ed25519PrivKey);
-            $curve25519PubKey = sodium_crypto_sign_ed25519_pk_to_curve25519($ed25519PubKey);
-            // RFC 4648
-            $privateKey = rtrim(strtr(base64_encode($curve25519PrivKey), '+/', '-_'), '=');
-            $pubKey = rtrim(strtr(base64_encode($curve25519PubKey), '+/', '-_'), '=');
-            $vless = Proxy::create([
-                'name' => $name,
-                'type' => 'vless',
-                'port' => 443,
-                'server_id' => $server->id,
-                'listen' => $server->ip,
-                'config' => [
-                    'uuid' => Str::uuid(),
-                    //x25519 key
-                    'privateKey' => $privateKey,
-                    'pubKey' => $pubKey,
-                    'security' => 'reality',
-
-                    'spiderX' => '/',
-                    'serverName' => ['www.lovelive-anime.jp', 'lovelive-anime.jp'],
-
-                    'listen' => $server->ip,
-                ]
-            ]);
-        }
-        $base['inbounds'][] = $this->makeXrayInboundConfig($vless);
-
-        // $base['policy']['levels']['0']= [
-        //             'handshake' => 3,
-        //             'connIdle' => 200,
-        // ];
 
         return response()->json($base, 200, [], 448);
     }
@@ -226,7 +128,7 @@ class XrayController extends Controller
 
         $base['inbounds'] = [];
 
-        foreach ($proxies as $item){
+        foreach ($proxies as $item) {
             $base['inbounds'][] = $this->makeXrayInboundConfig($item);
         }
 
@@ -238,8 +140,9 @@ class XrayController extends Controller
             //out in
             $base['inbounds'][] = $this->makeXrayInboundConfig($item);
 
-            $inboundNameTag = trim($item->name . '-' . $item->type . '-' . 'inbound');
-            $outboundNameTag = trim($proxy->name . '-' . $proxy->type . '-' . 'outbound');
+            $inboundNameTag = trim($item->name . '-' . $item->type . '-' . 'inbound'.'-'.$proxy->port);
+            $outboundNameTag = trim($proxy->name . '-' . $proxy->type . '-' . 'outbound'.'-'.$proxy->port);
+
             $base['routing']['rules'][] = [
                 "type" => "field",
                 "inboundTag" => [$inboundNameTag],
@@ -265,7 +168,7 @@ class XrayController extends Controller
 
     public function makeXrayInboundConfig(Proxy|Access $proxy, array $addons = [])
     {
-        $nameTag = trim($proxy->name . '-' . $proxy->type . '-' . 'inbound');
+        $nameTag = trim($proxy->name . '-' . $proxy->type . '-' . 'inbound'.'-'.$proxy->port);
         switch ($proxy->type) {
             case 'trojan':
                 $result = [
@@ -329,7 +232,7 @@ class XrayController extends Controller
                 if ($proxy->config['network'] === 'ws') {
                     $result['streamSettings'] = [
                         'network' => 'ws',
-                        'security'=>'none',
+                        'security' => 'none',
                     ];
                 }
                 $result = array_merge($temp, $result);
@@ -343,7 +246,7 @@ class XrayController extends Controller
                     'tag' => $nameTag,
                     'protocol' => 'socks',
                     'settings' => [
-                        'auth' => $proxy->config['auth'] ?? 'noauth',
+                        'auth' => 'password',
                         'accounts' => [
                             [
                                 'user' => $proxy->config['username'] ?? '',
@@ -410,7 +313,7 @@ class XrayController extends Controller
 
     public function makeXrayOutboundConfig(Proxy|Access $proxy, array $addons = [])
     {
-        $nameTag = trim($proxy->name . '-' . $proxy->type . '-' . 'outbound');
+        $nameTag = trim($proxy->name . '-' . $proxy->type . '-' . 'outbound'.'-'.$proxy->port);
         switch ($proxy->type) {
             case 'trojan':
                 $result = [
@@ -512,7 +415,7 @@ class XrayController extends Controller
                                         'id' => $proxy->config['uuid'],
                                         'security' => 'none',
                                         'encryption' => 'none',
-                                        'flow'=>$proxy->config['flow'] ?? '',
+                                        'flow' => $proxy->config['flow'] ?? '',
                                     ]
                                 ]
                             ]
@@ -520,7 +423,7 @@ class XrayController extends Controller
                     ],
                 ];
                 if (isset($proxy->config['security']) && $proxy->config['security'] == 'reality') {
-                    $result['streamSettings'] =  [
+                    $result['streamSettings'] = [
                         'network' => 'grpc',
                         'security' => 'reality',
                         'realitySettings' => [
@@ -529,7 +432,7 @@ class XrayController extends Controller
                             'serverName' => $proxy->config['serverName'][0],
                             'publicKey' => $proxy->config['pubKey'],
                             "shortId" => "",
-                            'spiderX'=>$proxy->config['spiderX'] ?? "",
+                            'spiderX' => $proxy->config['spiderX'] ?? "",
                         ],
                         'grpcSettings' => [
                             'serviceName' => 'grpc',
